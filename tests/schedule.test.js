@@ -54,7 +54,7 @@ describe("schedule", () => {
       defaultJarUrl: "https://example.com/default",
       rafflePhrases: ["Тестова фраза"]
     }));
-    bot.botInfo = { id: 1, is_bot: true, username: "DonationRaffleBot" };
+    bot.botInfo = { id: 1, is_bot: true, username: "TestBot" };
   });
 
   it("stores schedule settings", async () => {

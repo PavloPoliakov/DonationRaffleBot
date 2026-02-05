@@ -69,7 +69,7 @@ describe("bot integration", () => {
       defaultJarUrl: "https://example.com/default",
       rafflePhrases: ["Тестова фраза"]
     }));
-    bot.botInfo = { id: 1, is_bot: true, username: "DonationRaffleBot" };
+    bot.botInfo = { id: 1, is_bot: true, username: "TestBot" };
   });
 
   it("auto-registers on group messages", async () => {
@@ -127,7 +127,7 @@ describe("bot integration", () => {
     await bot.handleUpdate(
       createUpdate({
         chatId: 700,
-        newChatMembers: [{ id: 1, is_bot: true, username: "DonationRaffleBot" }]
+        newChatMembers: [{ id: 1, is_bot: true, username: "TestBot" }]
       })
     );
 
