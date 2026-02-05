@@ -27,23 +27,28 @@ const createUpdate = ({
   chatId = 100,
   userId = 200,
   chatType = "supergroup",
-  newChatMembers = []
+  newChatMembers
 }) => {
   const isCommand = text?.startsWith("/");
   const commandLength = isCommand ? text.indexOf(" ") : -1;
   const entityLength = isCommand ? (commandLength === -1 ? text.length : commandLength) : 0;
 
+  const message = {
+    message_id: 1,
+    text,
+    date: Math.floor(Date.now() / 1000),
+    chat: { id: chatId, type: chatType },
+    from: { id: userId, is_bot: false, first_name: "Test" },
+    entities: isCommand ? [{ type: "bot_command", offset: 0, length: entityLength }] : []
+  };
+
+  if (newChatMembers?.length) {
+    message.new_chat_members = newChatMembers;
+  }
+
   return {
     update_id: Math.floor(Math.random() * 100000),
-    message: {
-      message_id: 1,
-      text,
-      date: Math.floor(Date.now() / 1000),
-      chat: { id: chatId, type: chatType },
-      from: { id: userId, is_bot: false, first_name: "Test" },
-      entities: isCommand ? [{ type: "bot_command", offset: 0, length: entityLength }] : [],
-      new_chat_members: newChatMembers
-    }
+    message
   };
 };
 
