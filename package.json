@@ -1,0 +1,26 @@
+{
+  "name": "DonationRaffle-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "migrate": "knex migrate:latest",
+    "migrate:make": "knex migrate:make",
+    "test": "vitest run --config vitest.config.js",
+    "test:watch": "vitest --config vitest.config.js",
+    "test:pg": "npx wait-on tcp:localhost:5432 && DATABASE_URL=postgresql://raffle:raffle@localhost:5432/raffle_test vitest run --config vitest.config.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.5",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.7.4",
+    "grammy": "^1.23.1",
+    "knex": "^3.1.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18",
+    "wait-on": "^7.2.0"
+  }
+}
