@@ -244,7 +244,7 @@ export const createBot = ({
 
     const botName = ctx.me?.username ? `@${ctx.me.username}` : "";
     await ctx.reply(
-      `Привіт!\n\nДякую, що додали мене. Я${botName ? ` ${botName}` : ""} — Telegram-бот, що допомагає донатити регулярно.\n\nНапишіть /info, щоб дізнатися більше.`
+      `Привіт!\n\nДякую за запрошення! Я${botName ? ` ${botName}` : ""}, Telegram-бот, що допомагає донатити регулярно.\n\nНапишіть /info, щоб дізнатися більше.`
     );
   });
 
