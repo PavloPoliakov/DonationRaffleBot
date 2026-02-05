@@ -236,6 +236,23 @@ export const createBot = ({
     });
   }, scheduleCheckIntervalMs);
 
+  bot.on("my_chat_member", async (ctx) => {
+    const chat = ctx.chat;
+    if (chat?.type !== "channel") return;
+    const update = ctx.update?.my_chat_member;
+    const previousStatus = update?.old_chat_member?.status;
+    const currentStatus = update?.new_chat_member?.status;
+    const wasAbsent = previousStatus === "left" || previousStatus === "kicked";
+    const isPresent = currentStatus === "member" || currentStatus === "administrator";
+    if (!wasAbsent || !isPresent) return;
+
+    const botName = ctx.me?.username ? `@${ctx.me.username}` : null;
+    await ctx.api.sendMessage(
+      chat.id,
+      `Привіт!\n\nДякую, що додали мене. Я${botName ? ` ${botName}` : ""} — Telegram-бот, що допомагає донатити регулярно.\nЩоб дізнатися більше, викличіть /info.`
+    );
+  });
+
   bot.on("message", async (ctx, next) => {
     try {
       const chat = ctx.chat;
