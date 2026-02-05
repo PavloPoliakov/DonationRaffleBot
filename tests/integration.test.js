@@ -133,7 +133,7 @@ describe("bot integration", () => {
 
     const introCall = calls.find((call) => call.method === "sendMessage");
     expect(introCall?.payload.chat_id).toBe(700);
-    expect(introCall?.payload.text).toContain("Дякую, що додали мене");
+    expect(introCall?.payload.text).toContain("Дякую за запрошення");
     expect(introCall?.payload.text).toContain("/info");
   });
 
