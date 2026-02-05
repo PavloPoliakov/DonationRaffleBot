@@ -22,7 +22,13 @@ const createMockApi = (bot, handlers = {}) => {
   return calls;
 };
 
-const createUpdate = ({ text, chatId = 100, userId = 200, chatType = "supergroup" }) => {
+const createUpdate = ({
+  text,
+  chatId = 100,
+  userId = 200,
+  chatType = "supergroup",
+  newChatMembers = []
+}) => {
   const isCommand = text?.startsWith("/");
   const commandLength = isCommand ? text.indexOf(" ") : -1;
   const entityLength = isCommand ? (commandLength === -1 ? text.length : commandLength) : 0;
@@ -35,32 +41,12 @@ const createUpdate = ({ text, chatId = 100, userId = 200, chatType = "supergroup
       date: Math.floor(Date.now() / 1000),
       chat: { id: chatId, type: chatType },
       from: { id: userId, is_bot: false, first_name: "Test" },
-      entities: isCommand ? [{ type: "bot_command", offset: 0, length: entityLength }] : []
+      entities: isCommand ? [{ type: "bot_command", offset: 0, length: entityLength }] : [],
+      new_chat_members: newChatMembers
     }
   };
 };
 
-const createMyChatMemberUpdate = ({
-  chatId = 100,
-  chatType = "channel",
-  fromId = 200,
-  oldStatus = "left",
-  newStatus = "member"
-}) => ({
-  update_id: Math.floor(Math.random() * 100000),
-  my_chat_member: {
-    chat: { id: chatId, type: chatType, title: "Test Channel" },
-    from: { id: fromId, is_bot: false, first_name: "Admin" },
-    old_chat_member: {
-      status: oldStatus,
-      user: { id: 1, is_bot: true, username: "DonationRaffleBot" }
-    },
-    new_chat_member: {
-      status: newStatus,
-      user: { id: 1, is_bot: true, username: "DonationRaffleBot" }
-    }
-  }
-});
 
 describe("bot integration", () => {
   let storage;
@@ -125,18 +111,23 @@ describe("bot integration", () => {
     expect((await storage.getUsers(100)).length).toBe(1);
   });
 
-  it("introduces itself when added to a channel", async () => {
+  it("introduces itself when added to a group", async () => {
     const calls = createMockApi(bot, {
       sendMessage: (payload) => ({
         ok: true,
-        result: { message_id: 20, chat: { id: payload.chat_id }, text: payload.text }
+        result: { message_id: 21, chat: { id: payload.chat_id }, text: payload.text }
       })
     });
 
-    await bot.handleUpdate(createMyChatMemberUpdate({ chatId: 500 }));
+    await bot.handleUpdate(
+      createUpdate({
+        chatId: 700,
+        newChatMembers: [{ id: 1, is_bot: true, username: "DonationRaffleBot" }]
+      })
+    );
 
     const introCall = calls.find((call) => call.method === "sendMessage");
-    expect(introCall?.payload.chat_id).toBe(500);
+    expect(introCall?.payload.chat_id).toBe(700);
     expect(introCall?.payload.text).toContain("Дякую, що додали мене");
     expect(introCall?.payload.text).toContain("/info");
   });

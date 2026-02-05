@@ -236,19 +236,14 @@ export const createBot = ({
     });
   }, scheduleCheckIntervalMs);
 
-  bot.on("my_chat_member", async (ctx) => {
+  bot.on("message:new_chat_members", async (ctx) => {
     const chat = ctx.chat;
-    if (chat?.type !== "channel") return;
-    const update = ctx.update?.my_chat_member;
-    const previousStatus = update?.old_chat_member?.status;
-    const currentStatus = update?.new_chat_member?.status;
-    const wasAbsent = previousStatus === "left" || previousStatus === "kicked";
-    const isPresent = currentStatus === "member" || currentStatus === "administrator";
-    if (!wasAbsent || !isPresent) return;
+    if (!isGroupChat(chat)) return;
+    const newMembers = ctx.message?.new_chat_members || [];
+    if (!newMembers.some((member) => member.id === ctx.me.id)) return;
 
-    const botName = ctx.me?.username ? `@${ctx.me.username}` : null;
-    await ctx.api.sendMessage(
-      chat.id,
+    const botName = ctx.me?.username ? `@${ctx.me.username}` : "";
+    await ctx.reply(
       `Привіт!\n\nДякую, що додали мене. Я${botName ? ` ${botName}` : ""} — Telegram-бот, що допомагає донатити регулярно.\nЩоб дізнатися більше, викличіть /info.`
     );
   });
@@ -260,10 +255,6 @@ export const createBot = ({
       const user = ctx.from;
       if (!user || user.is_bot) return;
       const text = ctx.message?.text?.trim();
-      const newMembers = ctx.message?.new_chat_members || [];
-      if (newMembers.some((member) => member.id === ctx.me.id)) {
-        return;
-      }
       if (text?.startsWith("/")) return;
       const chatId = chat.id;
       const triggerWords = await storage.getTriggerWords(chatId);
