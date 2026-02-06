@@ -515,12 +515,17 @@ export const createBot = ({
       })
       .join("\n");
 
+    const totalRaffles = users.reduce(
+      (sum, entry) => sum + Number(entry.wins ?? 0),
+      0
+    );
+
     const totalDonated = users.reduce(
       (sum, entry) => sum + Number(entry.donated ?? 0),
       0
     );
 
-    return `Топ переможців:\n${lines}\n\nВсього донатів: ${totalDonated} грн 💛`;
+    return `Топ переможців:\n${lines}\n\nВсього донатів: ${totalRaffles} / ${totalDonated} грн 💛`;
   };
 
   bot.command("stats", async (ctx) => {
