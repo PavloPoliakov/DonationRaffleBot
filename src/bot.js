@@ -55,6 +55,7 @@ const commandHelp = [
 
 
 const isAdminStatus = (status) => status === "administrator" || status === "creator";
+const hasLeftChat = (status) => status === "left" || status === "kicked";
 
 export const createBot = ({
   botToken,
@@ -230,6 +231,37 @@ export const createBot = ({
     }
   };
 
+  const markLeftUsersAsOptedOut = async () => {
+    if (!storage.getChatIds) return 0;
+
+    const chatIds = await storage.getChatIds();
+    let removedCount = 0;
+
+    for (const chatId of chatIds) {
+      const users = await getUsers(chatId);
+      for (const user of users) {
+        try {
+          const member = await bot.api.getChatMember(chatId, user.id);
+          if (!hasLeftChat(member?.status)) continue;
+          const removed = await removeUser(chatId, user.id);
+          if (removed) removedCount += 1;
+        } catch (error) {
+          logger?.error?.("Failed to check chat member status:", {
+            chatId,
+            userId: user.id,
+            error
+          });
+        }
+      }
+    }
+
+    if (removedCount > 0) {
+      await storage.save();
+    }
+
+    return removedCount;
+  };
+
   setInterval(() => {
     runScheduledRaffles().catch((error) => {
       logger?.error?.("Schedule error:", error);
@@ -246,6 +278,16 @@ export const createBot = ({
     await ctx.reply(
       `Привіт!\n\nДякую за запрошення! Я${botName ? ` ${botName}` : ""}, Telegram-бот, що допомагає донатити регулярно.\n\nНапишіть /info, щоб дізнатися більше.`
     );
+  });
+
+  bot.on("message:left_chat_member", async (ctx) => {
+    const chat = ctx.chat;
+    if (!isGroupChat(chat)) return;
+    const leftMember = ctx.message?.left_chat_member;
+    if (!leftMember || leftMember.is_bot) return;
+    const removed = await removeUser(chat.id, leftMember.id);
+    if (!removed) return;
+    await storage.save();
   });
 
   bot.on("message", async (ctx, next) => {
@@ -587,5 +629,5 @@ export const createBot = ({
     }
   });
 
-  return { bot, raffleSessions };
+  return { bot, raffleSessions, markLeftUsersAsOptedOut };
 };

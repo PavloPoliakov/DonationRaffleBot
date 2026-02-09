@@ -27,7 +27,8 @@ const createUpdate = ({
   chatId = 100,
   userId = 200,
   chatType = "supergroup",
-  newChatMembers
+  newChatMembers,
+  leftChatMember
 }) => {
   const isCommand = text?.startsWith("/");
   const commandLength = isCommand ? text.indexOf(" ") : -1;
@@ -44,6 +45,10 @@ const createUpdate = ({
 
   if (newChatMembers?.length) {
     message.new_chat_members = newChatMembers;
+  }
+
+  if (leftChatMember) {
+    message.left_chat_member = leftChatMember;
   }
 
   return {
@@ -172,6 +177,47 @@ describe("bot integration", () => {
 
     const addedCall = calls.find((call) => call.payload.text?.includes("Додано до списку"));
     expect(addedCall).toBeUndefined();
+  });
+
+  it("marks users as opted out when they leave a group", async () => {
+    await storage.upsertUser(100, { id: 221, name: "Petro", username: null, wins: 0, donated: 0 });
+
+    await bot.handleUpdate(
+      createUpdate({
+        text: "service",
+        leftChatMember: { id: 221, is_bot: false, first_name: "Petro" }
+      })
+    );
+
+    expect(await storage.getUser(100, 221)).toBeNull();
+    expect(await storage.isOptedOut(100, 221)).toBe(true);
+  });
+
+  it("cleans up users who already left chats", async () => {
+    await storage.upsertUser(100, { id: 401, name: "Left", username: null, wins: 0, donated: 0 });
+    await storage.upsertUser(100, { id: 402, name: "Still", username: null, wins: 0, donated: 0 });
+
+    const cleanupBot = createBot({
+      botToken: "TEST",
+      storage,
+      logger,
+      defaultJarUrl: "https://example.com/default",
+      rafflePhrases: ["Тестова фраза"]
+    });
+    cleanupBot.bot.botInfo = { id: 1, is_bot: true, username: "TestBot" };
+    createMockApi(cleanupBot.bot, {
+      getChatMember: (payload) => {
+        if (payload.user_id === 401) return { ok: true, result: { status: "left" } };
+        return { ok: true, result: { status: "member" } };
+      }
+    });
+
+    const removedCount = await cleanupBot.markLeftUsersAsOptedOut();
+
+    expect(removedCount).toBe(1);
+    expect(await storage.getUser(100, 401)).toBeNull();
+    expect(await storage.isOptedOut(100, 401)).toBe(true);
+    expect(await storage.getUser(100, 402)).not.toBeNull();
   });
 
   it("lets admins configure jar link", async () => {

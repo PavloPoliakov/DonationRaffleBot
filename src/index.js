@@ -45,7 +45,7 @@ const rafflePhrases = JSON.parse(
   await fs.readFile(new URL("./raffle-phrases.json", import.meta.url), "utf-8")
 );
 
-const { bot } = createBot({
+const { bot, markLeftUsersAsOptedOut } = createBot({
   botToken,
   storage,
   logger: console,
@@ -61,6 +61,10 @@ server.post(webhookPath, webhookCallback(bot, "fastify"));
 await server.listen({ port, host: "0.0.0.0" });
 await bot.api.setWebhook(`${normalizedPublicUrl}${webhookPath}`);
 await bot.api.setMyCommands(botCommands);
+const cleanedUsers = await markLeftUsersAsOptedOut();
 
 console.log(`Webhook set to ${normalizedPublicUrl}${webhookPath}`);
 console.log(`Server listening on port ${port}`);
+if (cleanedUsers > 0) {
+  console.log(`Marked ${cleanedUsers} users as opted out because they left chats.`);
+}

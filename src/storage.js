@@ -212,6 +212,11 @@ export const createStorage = async ({ dbPath, databaseUrl }) => {
     }));
   };
 
+  const getChatIds = async () => {
+    const rows = await db("chats").select("chat_id");
+    return rows.map((row) => row.chat_id);
+  };
+
   const getUser = async (chatId, userId) => {
     const row = await db("users")
       .select("user_id", "name", "username", "wins", "donated")
@@ -271,6 +276,7 @@ export const createStorage = async ({ dbPath, databaseUrl }) => {
   return {
     ensureChat,
     getUsers,
+    getChatIds,
     getUser,
     upsertUser,
     removeUser,
