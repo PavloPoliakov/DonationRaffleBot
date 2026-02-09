@@ -199,10 +199,21 @@ export const createStorage = async ({ dbPath, databaseUrl }) => {
       .where({ chat_id: String(chatId) });
   };
 
-  const getUsers = async (chatId) => {
-    const rows = await db("users")
+  const getUsers = async (chatId, { includeOptedOut = false } = {}) => {
+    const query = db("users")
       .select("user_id", "name", "username", "wins", "donated")
       .where({ chat_id: String(chatId) });
+
+    if (!includeOptedOut) {
+      query.whereNotExists(
+        db("opt_outs")
+          .select(1)
+          .whereRaw("opt_outs.chat_id = users.chat_id")
+          .whereRaw("opt_outs.user_id = users.user_id")
+      );
+    }
+
+    const rows = await query;
     return rows.map((row) => ({
       id: Number(row.user_id),
       name: row.name,
@@ -249,14 +260,12 @@ export const createStorage = async ({ dbPath, databaseUrl }) => {
 
   const removeUser = async (chatId, userId) => {
     const existing = await getUser(chatId, userId);
-    await db("users")
-      .where({ chat_id: String(chatId), user_id: String(userId) })
-      .del();
+    const alreadyOptedOut = await isOptedOut(chatId, userId);
     await db("opt_outs")
       .insert({ chat_id: String(chatId), user_id: String(userId) })
       .onConflict(["chat_id", "user_id"])
       .ignore();
-    return Boolean(existing);
+    return Boolean(existing) && !alreadyOptedOut;
   };
 
   const isOptedOut = async (chatId, userId) => {

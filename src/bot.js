@@ -535,8 +535,8 @@ export const createBot = ({
 
   bot.command("configure", handleConfigure);
 
-  const buildStatsMessage = (users) => {
-    const ranked = users
+  const buildStatsMessage = (rankedUsers, allUsers = rankedUsers) => {
+    const ranked = rankedUsers
       .filter((entry) => Number(entry.wins) > 0)
       .sort((a, b) => {
         const winsDiff = (b.wins ?? 0) - (a.wins ?? 0);
@@ -557,12 +557,12 @@ export const createBot = ({
       })
       .join("\n");
 
-    const totalRaffles = users.reduce(
+    const totalRaffles = allUsers.reduce(
       (sum, entry) => sum + Number(entry.wins ?? 0),
       0
     );
 
-    const totalDonated = users.reduce(
+    const totalDonated = allUsers.reduce(
       (sum, entry) => sum + Number(entry.donated ?? 0),
       0
     );
@@ -573,8 +573,9 @@ export const createBot = ({
   bot.command("stats", async (ctx) => {
     const chatId = ctx.chat?.id;
     if (!chatId) return;
-    const users = await getUsers(chatId);
-    await ctx.reply(buildStatsMessage(users));
+    const activeUsers = await getUsers(chatId);
+    const allUsers = await storage.getUsers(chatId, { includeOptedOut: true });
+    await ctx.reply(buildStatsMessage(activeUsers, allUsers));
   });
 
   bot.command("info", async (ctx) => {

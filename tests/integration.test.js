@@ -172,7 +172,7 @@ describe("bot integration", () => {
     await bot.handleUpdate(createUpdate({ text: "/eject", userId: 220 }));
     await bot.handleUpdate(createUpdate({ text: "Повернувся", userId: 220 }));
 
-    expect(await storage.getUser(100, 220)).toBeNull();
+    expect(await storage.getUser(100, 220)).not.toBeNull();
     expect(await storage.isOptedOut(100, 220)).toBe(true);
 
     const addedCall = calls.find((call) => call.payload.text?.includes("Додано до списку"));
@@ -189,7 +189,7 @@ describe("bot integration", () => {
       })
     );
 
-    expect(await storage.getUser(100, 221)).toBeNull();
+    expect(await storage.getUser(100, 221)).not.toBeNull();
     expect(await storage.isOptedOut(100, 221)).toBe(true);
   });
 
@@ -215,7 +215,7 @@ describe("bot integration", () => {
     const removedCount = await cleanupBot.markLeftUsersAsOptedOut();
 
     expect(removedCount).toBe(1);
-    expect(await storage.getUser(100, 401)).toBeNull();
+    expect(await storage.getUser(100, 401)).not.toBeNull();
     expect(await storage.isOptedOut(100, 401)).toBe(true);
     expect(await storage.getUser(100, 402)).not.toBeNull();
   });
@@ -365,6 +365,27 @@ describe("bot integration", () => {
     expect(statsCall).toBeDefined();
     expect(statsCall.payload.text).toContain("1. Max (@max) — 2 / 70 грн");
     expect(statsCall.payload.text).toContain("2. Ira — 1 / 20 грн");
+  });
+
+  it("includes opted-out users in totals but not top list", async () => {
+    const calls = createMockApi(bot, {
+      sendMessage: (payload) => ({
+        ok: true,
+        result: { message_id: 22, chat: { id: payload.chat_id }, text: payload.text }
+      })
+    });
+
+    await storage.upsertUser(100, { id: 308, name: "Nina", username: "nina", wins: 2, donated: 60 });
+    await storage.upsertUser(100, { id: 309, name: "Taras", username: "taras", wins: 5, donated: 200 });
+    await storage.removeUser(100, 309);
+
+    await bot.handleUpdate(createUpdate({ text: "/stats", userId: 207 }));
+
+    const statsCall = calls.find((call) => call.payload.text?.includes("Топ переможців"));
+    expect(statsCall).toBeDefined();
+    expect(statsCall.payload.text).toContain("Nina (@nina) — 2 / 60 грн");
+    expect(statsCall.payload.text).not.toContain("Taras (@taras)");
+    expect(statsCall.payload.text).toContain("Всього донатів: 7 / 260 грн");
   });
 
   it("sorts stats by donated amount when wins tie", async () => {

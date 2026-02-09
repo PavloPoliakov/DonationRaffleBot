@@ -54,4 +54,21 @@ describe("storage", () => {
     expect(await reopened.getAutoRegister(321)).toBe(false);
   });
 
+  it("keeps opted-out users for totals but excludes active list", async () => {
+    const dbPath = await createTempPath();
+    const storage = await createStorage({ dbPath });
+    await storage.upsertUser(500, { id: 1, name: "A", username: null, wins: 3, donated: 90 });
+    await storage.upsertUser(500, { id: 2, name: "B", username: null, wins: 1, donated: 20 });
+    const removed = await storage.removeUser(500, 1);
+    await storage.save();
+
+    const reopened = await createStorage({ dbPath });
+    const activeUsers = await reopened.getUsers(500);
+    const allUsers = await reopened.getUsers(500, { includeOptedOut: true });
+
+    expect(removed).toBe(true);
+    expect(activeUsers.map((user) => user.id)).toEqual([2]);
+    expect(allUsers.map((user) => user.id).sort((a, b) => a - b)).toEqual([1, 2]);
+  });
+
 });
