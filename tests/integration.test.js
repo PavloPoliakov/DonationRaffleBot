@@ -193,33 +193,6 @@ describe("bot integration", () => {
     expect(await storage.isOptedOut(100, 221)).toBe(true);
   });
 
-  it("cleans up users who already left chats", async () => {
-    await storage.upsertUser(100, { id: 401, name: "Left", username: null, wins: 0, donated: 0 });
-    await storage.upsertUser(100, { id: 402, name: "Still", username: null, wins: 0, donated: 0 });
-
-    const cleanupBot = createBot({
-      botToken: "TEST",
-      storage,
-      logger,
-      defaultJarUrl: "https://example.com/default",
-      rafflePhrases: ["Тестова фраза"]
-    });
-    cleanupBot.bot.botInfo = { id: 1, is_bot: true, username: "TestBot" };
-    createMockApi(cleanupBot.bot, {
-      getChatMember: (payload) => {
-        if (payload.user_id === 401) return { ok: true, result: { status: "left" } };
-        return { ok: true, result: { status: "member" } };
-      }
-    });
-
-    const removedCount = await cleanupBot.markLeftUsersAsOptedOut();
-
-    expect(removedCount).toBe(1);
-    expect(await storage.getUser(100, 401)).not.toBeNull();
-    expect(await storage.isOptedOut(100, 401)).toBe(true);
-    expect(await storage.getUser(100, 402)).not.toBeNull();
-  });
-
   it("lets admins configure jar link", async () => {
     createMockApi(bot, {
       getChatMember: () => ({ ok: true, result: { status: "administrator" } }),

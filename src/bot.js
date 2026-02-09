@@ -55,7 +55,6 @@ const commandHelp = [
 
 
 const isAdminStatus = (status) => status === "administrator" || status === "creator";
-const hasLeftChat = (status) => status === "left" || status === "kicked";
 
 export const createBot = ({
   botToken,
@@ -229,37 +228,6 @@ export const createBot = ({
       await storage.setScheduleLastRunKey(chatId, runKey);
       await storage.save();
     }
-  };
-
-  const markLeftUsersAsOptedOut = async () => {
-    if (!storage.getChatIds) return 0;
-
-    const chatIds = await storage.getChatIds();
-    let removedCount = 0;
-
-    for (const chatId of chatIds) {
-      const users = await getUsers(chatId);
-      for (const user of users) {
-        try {
-          const member = await bot.api.getChatMember(chatId, user.id);
-          if (!hasLeftChat(member?.status)) continue;
-          const removed = await removeUser(chatId, user.id);
-          if (removed) removedCount += 1;
-        } catch (error) {
-          logger?.error?.("Failed to check chat member status:", {
-            chatId,
-            userId: user.id,
-            error
-          });
-        }
-      }
-    }
-
-    if (removedCount > 0) {
-      await storage.save();
-    }
-
-    return removedCount;
   };
 
   setInterval(() => {
@@ -630,5 +598,5 @@ export const createBot = ({
     }
   });
 
-  return { bot, raffleSessions, markLeftUsersAsOptedOut };
+  return { bot, raffleSessions };
 };
